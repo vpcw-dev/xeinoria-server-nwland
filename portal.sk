@@ -1,0 +1,4 @@
+# Disable portal usage on this server (hub/crea/nwland/test).
+# Survie keeps portals enabled — this file lives per-server, not in global.
+on portal:
+    cancel event
