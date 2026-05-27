@@ -1,0 +1,6 @@
+# Identifies this server to global scripts loaded from xeinoria-scripts-global.
+# Loaded first (underscore prefix sorts before letters in Skript's load order).
+# DO NOT REMOVE — global scripts (staffchat, friends-party, etc.) depend on {server::id}.
+
+on skript load:
+    set {server::id} to "NWLAND"
