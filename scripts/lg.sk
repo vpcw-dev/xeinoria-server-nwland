@@ -1,0 +1,236 @@
+options:
+	prefix: &6[&eLG&6] &r
+	
+on load:
+	if {roles::*} is not set:
+		set {roles::*} to "villageois", "loup_garou", "petite_fille", "voyante", "sorciere", "idiot_du_village", "cupidon", "chasseur", "infect_pere_des_loups", "enfant_sauvage", "assassin", "apprentie_voyante", "garde", "ancien"
+	if {game.status} is not set:
+		clear {game.players::*}
+		
+command /lgrp [<text>] [<text>] [<text>] [<text>] [<text>]:
+	trigger:
+		if arg 1 is not set:
+			cmdHelp(player)
+			stop
+		if arg 1 is "help":
+			cmdHelp(player)
+			stop
+		if arg 1 is "config":
+			if arg 2 is not set:
+				cmdHelp(player, "config")
+				stop
+		if arg 1 is "manage":
+			if arg 2 is not set:
+				cmdHelp(player, "manage")
+				stop
+		if arg 1 is "reload":
+			if player does not have permission "admin":
+				send "{@prefix} &cYou don't have permission to do that." to sender
+				stop
+			execute sender command "sk reload lg"
+			send "{@prefix} &aConfiguration reloaded." to sender
+			stop
+		if arg 1 is "join":
+			joinGame(player, arg 2 parsed as offline player)
+			stop
+		if arg 1 is "leave":
+			leaveGame(player, arg 2 parsed as offline player)
+			stop
+			
+on tab complete of "/lgrp":
+	if player has permission "admin":
+		set tab completions for position 1 to "help", "config", "manage", "join", "leave", "start", "list", "stop", "restart", "status", "manualmode", "automaticmode", "reload"
+	else:
+		set tab completions for position 1 to "help", "join", "leave", "status", "list"
+	if tab arg-1 is "help":
+		set tab completions for position 2 to "reload", "config", "manage", "join", "leave", "start", "stop", "restart", "status", "manualmode", "automaticmode"
+		stop
+	else if tab arg-1 is "config":
+		sender has permission "admin"
+		set tab completions for position 2 to "village", "home", "outside", "lg"
+		if tab arg 2 is not set:
+			stop
+		if tab arg 2 is "village":
+			set tab completions for position 3 to "setspawnpoint", "unsetspawnpoint", "setwalkableblocks", "unsetwalkableblocks", "addchairpoint", "removechairpoint"
+			stop
+		if tab arg 2 is "home":
+			set tab completions for position 3 to "addspawnpoint", "removespawnpoint", "setwalkableblocks", "unsetwalkableblocks"
+			stop
+		if tab arg 2 is "outside":
+			set tab completions for position 3 to "setwalkableblocks", "unsetwalkableblocks"
+			stop
+		if tab arg 2 is "caves": # for werewolf caves
+			set tab completions for position 3 to "setspawnpoint", "unsetspawnpoint", "setwalkableblocks", "unsetwalkableblocks"
+			stop
+		if tab arg-2 is "roles":
+			if tab arg 3 is not set:
+				set tab completions for position 3 to {roles::*}
+				stop
+			if tab arg 4 is not set:
+				set tab completions for position 4 to "setamount"
+				stop
+			set tab completions for position 5 to "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"
+			stop
+			
+	else if tab arg 1 is "join":
+		if player has permission "admin":
+			set tab completions for position 2 to all players
+		stop
+	else if tab arg 1 is "leave":
+		if player has permission "admin":
+			set tab completions for position 2 to all players
+		stop
+	else if tab arg-1 is "manage":
+		set tab completions for position 2 to "add", "kill", "setrole", "list", "startday", "startnight", "startvote", "endvote", "revealrole", "tp"
+		if tab arg 2 is "add":
+			if tab arg 3 is not set:
+				set tab completions for position 3 to all players
+				stop
+			set tab completions for position 4 to {roles::*}
+			stop
+		else if tab arg 2 is "kill":
+			if tab arg 3 is not set:
+				set tab completions for position 3 to {game.players::*}
+				stop
+		else if tab arg 2 is "setrole":
+			if tab arg 3 is not set:
+				set tab completions for position 3 to {game.players::*}
+				stop
+			set tab completions for position 4 to {roles::*}
+			stop
+		else if tab arg 2 is "revealrole":
+			if tab arg 3 is not set:
+				set tab completions for position 3 to {game.players::*}
+				stop
+		else if tab arg 2 is "tp":
+			if tab arg 3 is not set:
+				set tab completions for position 3 to {game.players::*}
+				stop
+				
+function isGameInProgress():: boolean:
+	if {game.status} is set:
+		return true
+	else:
+		return false 
+		
+function joinGame(s: sender, arg: offline player = "" parsed as offline player):
+	if {_arg} is not set:
+		{_s} is a player
+		isGameInProgress() is false
+		if {game.players::*} contains uuid of {_s}:
+			send "{@prefix} &cYou are already in the game." to {_s}
+			stop
+		add uuid of {_s} to {game.players::*}
+		send "{@prefix} &aYou have joined the game." to {_s}
+	else:
+		if {_s} doesn't have permission "admin":
+			joinGame({_s})
+			stop
+		{_arg} is a player
+		isGameInProgress() is false
+		if {game.players::*} contains uuid of {_arg}:
+			send "{@prefix} &c%{_arg}% is already in the game." to {_s}
+			stop
+		add uuid of {_arg} to {game.players::*}
+		send "{@prefix} &a%{_arg}% has joined the game." to {_s}
+		send "{@prefix} &aYou have joined the game." to {_arg}
+		
+function leaveGame(s: sender, arg: offline player = "" parsed as offline player):
+	if {_arg} is not set:
+		{_s} is an offline player
+		isGameInProgress() is false
+		if {game.players::*} does not contain uuid of {_s}:
+			send "{@prefix} &cYou are not in the game." to {_s}
+			stop
+		remove uuid of {_s} from {game.players::*}
+		send "{@prefix} &aYou have left the game." to {_s}
+	else:
+		if {_s} doesn't have permission "admin":
+			leaveGame({_s})
+			stop
+		{_arg} is an offline player
+		isGameInProgress() is false
+		if {game.players::*} does not contain uuid of {_arg}:
+			send "{@prefix} &c%{_arg}% is not in the game." to {_s}
+			stop
+		remove uuid of {_arg} from {game.players::*}
+		send "{@prefix} &a%{_arg}% has left the game." to {_s}
+		send "{@prefix} &aYou have left the game." to {_arg}
+		
+function gameStatus(s: sender):
+	{_s} is a player
+	if isGameInProgress() is false:
+		send "{@prefix} &7No game in progress." to {_s}
+		stop
+	send "{@prefix} &7Game in progress with &a%size of {game.players::*}% &7players." to {_s}
+	
+function gameList(s: sender):
+	{_s} is a player
+	if isGameInProgress() is false:
+		send "{@prefix} &7No game in progress." to {_s}
+		stop
+	send "{@prefix} &7Players in the game:" to {_s}
+	loop {game.players::*}:
+		set {_p} to loop-value parsed as offline player
+		send "&6- &e%{_p}%" to {_s}
+
+
+		
+		
+		
+function cmdHelp(s: sender, cmd: text = ""):
+	if {_cmd} is "":
+		send "{@prefix} &7Help utilisation /lgrp" to {_s}
+		if {_s} has permission "admin":
+			send "&6Voici les &a*&6/commandes administrateurs:" to {_s}
+			send "&a*&6/lgrp reload &7- Recharge la configuration" to {_s}
+			send "&a*&6/lgrp config &7- Configuration du jeu" to {_s}
+			send "&a*&6/lgrp manage &7- Gestion du jeu en cours" to {_s}
+			send "&a*&6/lgrp start &7- Démarre une partie" to {_s}
+			send "&a*&6/lgrp stop &7- Stoppe une partie" to {_s}
+			send "&a*&6/lgrp restart &7- Redémarre une partie" to {_s}
+			send "&a*&6/lgrp manualmode &7- Passe en mode manuel" to {_s}
+			send "&a*&6/lgrp automaticmode &7- Passe en mode automatique" to {_s}
+		if {_s} has permission "admin":
+			send "" to {_s}
+			send "&6Voici les &6/commandes joueurs:" to {_s}
+		else:
+			send "&6Voici les &6commandes disponibles:" to {_s}
+		send "&6/lgrp help &7- Affiche cette aide" to {_s}
+		send "&6/lgrp join &7- Rejoint une partie" to {_s}
+		send "&6/lgrp leave &7- Quitte une partie" to {_s}
+		send "&6/lgrp status &7- Affiche le statut de la partie" to {_s}
+		send "&6/lgrp list &7- Affiche la liste des joueurs dans la partie" to {_s}
+	else if {_cmd} is "config":
+		send "{@prefix} &7Help configuration /lgrp config" to {_s}
+		send "&6/lgrp config village setspawnpoint &7- Définit le point de spawn du village" to {_s}
+		send "&6/lgrp config village unsetspawnpoint &7- Supprime le point de spawn du village" to {_s}
+		send "&6/lgrp config village setwalkableblocks &7- Définit les blocks sur lesquels quand on marche on est considéré dans le village" to {_s}
+		send "&6/lgrp config village unsetwalkableblocks &7- Supprime les blocks sur lesquels quand on marche on est considéré dans le village" to {_s}
+		send "&6/lgrp config village addchairpoint &7- Ajoute un point de chaise dans le village" to {_s}
+		send "&6/lgrp config village removechairpoint &7- Supprime un point de chaise dans le village" to {_s}
+		send "&6/lgrp config home addspawnpoint &7- Ajoute un point de spawn pour une maison" to {_s}
+		send "&6/lgrp config home removespawnpoint &7- Supprime un point de spawn pour une maison" to {_s}
+		send "&6/lgrp config home setwalkableblocks &7- Définit les blocks sur lesquels quand on marche on est considéré dans une maison" to {_s}
+		send "&6/lgrp config home unsetwalkableblocks &7- Supprime les blocks sur lesquels quand on marche on est considéré dans une maison" to {_s}
+		send "&6/lgrp config outside setwalkableblocks &7- Définit les blocks sur lesquels quand on marche on est considéré en dehors d'une maison" to {_s}
+		send "&6/lgrp config outside unsetwalkableblocks &7- Supprime les blocks sur lesquels quand on marche on est considéré en dehors d'une maison" to {_s}
+		send "&6/lgrp config caves setspawnpoint &7- Définit le point de spawn des grottes des loups" to {_s}
+		send "&6/lgrp config caves unsetspawnpoint &7- Supprime le point de spawn des grottes des loups" to {_s}
+		send "&6/lgrp config caves setwalkableblocks &7- Définit les blocks sur lesquels quand on marche on est considéré dans les grottes des loups" to {_s}
+		send "&6/lgrp config caves unsetwalkableblocks &7- Supprime les blocks sur lesquels quand on marche on est considéré dans les grottes des loups" to {_s}
+		send "&6/lgrp config roles list &7- Affiche la liste des rôles disponibles ainsi que leur état" to {_s}
+		send "&6/lgrp config roles <role> setamount <number> &7- Définit le nombre de joueurs pour le rôle spécifié (0 pour désactiver)" to {_s}
+	else if {_cmd} is "manage":
+		send "{@prefix} &7Help gestion /lgrp manage" to {_s}
+		send "&6/lgrp manage add <player> <role> &7- Ajoute un joueur à la partie avec le rôle spécifié" to {_s}
+		send "&6/lgrp manage kill <player> &7- Élimine un joueur de la partie" to {_s}
+		send "&6/lgrp manage setrole <player> <role> &7- Change le rôle d'un joueur dans la partie" to {_s}
+		send "&6/lgrp manage list &7- Affiche la liste des joueurs dans la partie avec leur rôle" to {_s}
+		send "&6/lgrp manage startday &7- Force le début du jour" to {_s}
+		send "&6/lgrp manage startnight &7- Force le début de la nuit" to {_s}
+		send "&6/lgrp manage startvote &7- Démarre un vote d'élimination" to {_s}
+		send "&6/lgrp manage endvote &7- Termine le vote d'élimination" to {_s}
+		send "&6/lgrp manage revealrole <player> &7- Révèle le rôle d'un joueur" to {_s}
+		send "&6/lgrp manage tp <player> &7- Téléporte le joueur là où il devrait être en fonction de son rôle et de l'heure" to {_s}
+		

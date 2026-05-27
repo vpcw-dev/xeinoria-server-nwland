@@ -1,0 +1,89 @@
+on join:
+	loop {alarm::*}:
+		loop-value is online
+		set {_p} to loop-value
+		{_p} has permission "admin"
+		alarmPlayer({_p})
+		
+function alarmPlayer(p: player):
+	loop 10 times:
+		play sound "minecraft:entity.experience_orb.pickup" with volume 100 with pitch 0.5 to {_p}
+		wait 3 ticks
+		
+command /alarm [<text>] [<offline player>]:
+	permission: admin
+	trigger:
+		if sender is console:
+			send "&cCette commande ne peut pas être exécutée depuis la console." to console
+			stop
+		if arg-1 is not set:
+			toggleAlarmForPlayer(player)
+			if isAlarmEnabledForPlayer(player) is true:
+				send "&aL'alarme de connexion est maintenant &lon&f"
+			else:
+				send "&cL'alarme de connexion est maintenant &loff&f"
+		else if arg-1 is set:
+			if arg-1 is "list":
+				if {alarm::*} is set:
+					send "&aJoueurs avec l'alarme de connexion activée:" to player
+					loop {alarm::*}:
+						send "- &e%loop-value%" to player
+				else:
+					send "&cAucun joueur n'a l'alarme de connexion activée." to player
+				stop
+			if arg-2 is set:
+				set {_target} to arg-2
+			else:
+				set {_target} to player
+			if arg-1 is "on":
+				setAlarmForPlayer({_target}, true)
+				send "&aL'alarme de connexion est maintenant &lon&a pour &b%{_target}%"
+				play sound "minecraft:entity.player.levelup" with volume 1 with pitch 1 to {_target}
+			else if arg-1 is "off":
+				setAlarmForPlayer({_target}, false)
+				send "&cL'alarme de connexion est maintenant &loff&c pour &b%{_target}%"
+			
+		else:
+			send "&cUsage: /alarm [on|off|list] [<offline player>]" to player
+
+			
+			
+command /disableallalarm [<offline player>]:
+	permission: admin
+	trigger:
+		if arg-1 is set:
+			remove arg-1 from {alarm::*}
+			send "&cToutes les alarmes de connexion ont été désactivées pour %arg-1%." to player
+		else: 
+			clear {alarm::*}
+			send "&cToutes les alarmes de connexion ont été désactivées pour tous les admins." to player
+
+function toggleAlarmForPlayer(p: offline player):
+	if isAlarmEnabledForPlayer({_p}) is true:
+		setAlarmForPlayer({_p}, false)
+	else:
+		setAlarmForPlayer({_p}, true)
+
+function isAlarmEnabledForPlayer(p: offline player) :: boolean:
+	if {alarm::*} contains {_p}:
+		return true
+	else:
+		return false
+
+function setAlarmForPlayer(p: offline player, b: boolean):
+	if {_b} is true:
+		if {alarm::*} does not contain {_p}:
+			add {_p} to {alarm::*}
+	else:
+		if {alarm::*} contains {_p}:
+			remove {_p} from {alarm::*}
+		
+on tab complete:
+	if event-string contains "/alarm":
+		set tab completions for position 1 to "on" and "off" and "list"
+		# clear tab completions
+
+command /debugalarm:
+	permission: admin
+	trigger:
+		send "Alarm list: %{alarm::*}%" to player

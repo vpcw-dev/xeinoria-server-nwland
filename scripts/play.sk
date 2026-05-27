@@ -1,0 +1,14 @@
+command /play [<text>]:
+    trigger:
+        send player to server arg-1
+
+command /survie [<text>]:
+    aliases: /sv
+    trigger:
+        send player to server "survie"
+
+command /crea [<text>]:
+    aliases: /creative
+    trigger:
+        send player to server "crea"
+

@@ -1,0 +1,20 @@
+options:
+  hub_perm: staff
+  msg_no_perm: &cTu n'as pas la permission d'utiliser cette commande.
+  msg_sent: &aTéléportation vers le hub effectuée.
+
+command /hub [<text>]:
+  aliases: lobby
+  trigger:
+    if arg 1 is set:
+      if player has permission "{@hub_perm}":
+        set {_target} to arg 1 parsed as player
+        if {_target} is not set:
+          send "&cJoueur introuvable."
+          stop
+    else:
+      set {_target} to player
+
+    send {_target} to server "hub"
+    send "{@msg_sent}" to player
+    stop

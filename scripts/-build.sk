@@ -1,0 +1,160 @@
+command /build [<text>]:
+    permission: admin
+    aliases: bu
+    trigger:
+        sender is a player
+        if {build::%player%} is set:
+            delete {build::%player%}
+            send "&aYou have disabled build mode."
+        else:
+            set {build::%player%} to true
+            send "&aYou have enabled build mode. You can now break and place blocks in the hub."
+            
+on leave:
+    if {build::%player%} is set:
+        delete {build::%player%}
+
+on break:
+    if {build::%player%} is not set:
+        cancel event
+        if player has permission "admin":
+            send "&cFait /build pour activer le mode construction."
+
+on place:
+    if {build::%player%} is not set:
+        cancel event
+
+on right click on beacon:
+    {build::%player%} is not set
+    cancel event
+
+on right click on enchanting table:
+    {build::%player%} is not set
+    cancel event
+
+on right click on anvil:
+    {build::%player%} is not set
+    cancel event
+
+on right click on grindstone:
+    {build::%player%} is not set
+    cancel event
+
+on right click on smithing table:
+    {build::%player%} is not set
+    cancel event
+
+on right click on lectern:
+    {build::%player%} is not set
+    cancel event
+
+on right click on loom:
+    {build::%player%} is not set
+    cancel event
+
+on right click on cartography table:
+    {build::%player%} is not set
+    cancel event
+
+on right click on stonecutter:
+    {build::%player%} is not set
+    cancel event
+
+on right click on brewing stand:
+    {build::%player%} is not set
+    cancel event
+
+on right click on chest:
+    {build::%player%} is not set
+    cancel event
+
+on right click on trapped chest:
+    {build::%player%} is not set
+    cancel event
+
+on right click on ender chest:
+    {build::%player%} is not set
+    cancel event
+
+on right click on shulker box:
+    {build::%player%} is not set
+    cancel event
+
+on right click on barrel:
+    {build::%player%} is not set
+    cancel event
+
+on right click on dropper:
+    {build::%player%} is not set
+    cancel event
+
+on right click on dispenser:
+    {build::%player%} is not set
+    cancel event
+
+on right click on furnace:
+    {build::%player%} is not set
+    cancel event
+
+on right click on smoker:
+    {build::%player%} is not set
+    cancel event
+
+on right click on blast furnace:
+    {build::%player%} is not set
+    cancel event
+
+on right click on crafting table:
+    {build::%player%} is not set
+    cancel event
+
+on right click on jukebox:
+    {build::%player%} is not set
+    cancel event
+
+on right click on bell:
+    {build::%player%} is not set
+    cancel event
+
+on right click on item frame:
+    {build::%player%} is not set
+    cancel event
+
+on right click on glow item frame:
+    {build::%player%} is not set
+    cancel event
+
+on right click on painting:
+    {build::%player%} is not set
+    cancel event
+
+on right click on armor stand:
+    {build::%player%} is not set
+    cancel event
+
+on break of armor stand:
+    {build::%player%} is not set
+    cancel event
+
+on break of item frame:
+    {build::%player%} is not set
+    cancel event
+
+on break of glow item frame:
+    {build::%player%} is not set
+    cancel event
+
+on break of painting:
+    {build::%player%} is not set
+    cancel event
+
+on break of end crystal:
+    {build::%player%} is not set
+    cancel event
+
+on damage of end crystal:
+    {build::%attacker%} is not set
+    cancel event
+
+
+

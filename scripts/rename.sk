@@ -1,0 +1,48 @@
+command /rename [<text>]:
+    permission: admin
+    trigger:
+        sender is a player
+        if arg-1 is not set:
+            send "&cUsage: /rename <name>" to player
+            stop
+        if player is not holding air:
+            set name of tool of player to colored arg-1
+            set {_item_name} to colored arg-1
+            send "&aVous avez renommé votre objet en %{_item_name}%&a!" to player
+        else:
+            send "&cVous devez tenir un objet dans votre main pour le renommer." to player
+
+command /unbreakable [<text=toggle>]:
+    permission: admin
+    trigger:
+        sender is a player
+        if arg-1 is "toggle":
+            send "&cLa gestion de l'incassable n'est pas supportée par cette version de Skript." to player
+
+command /codecolor:
+    aliases: /cc, /colorcode
+    permission: admin
+    trigger:
+        send "&eVoici les codes de couleurs Minecraft :" to player
+        send "&0&*0 - Noir" to player
+        send "&1&*1 - Bleu foncé" to player
+        send "&2&*2 - Vert foncé" to player
+        send "&3&*3 - Cyan foncé" to player
+        send "&4&*4 - Rouge foncé" to player
+        send "&5&*5 - Violet" to player
+        send "&6&*6 - Or" to player
+        send "&7&*7 - Gris clair" to player
+        send "&8&*8 - Gris foncé" to player
+        send "&9&*9 - Bleu clair" to player
+        send "&a&*a - Vert clair" to player
+        send "&b&*b - Cyan clair" to player
+        send "&c&*c - Rouge clair" to player
+        send "&d&*d - Rose" to player
+        send "&e&*e - Jaune" to player
+        send "&f&*f - Blanc" to player
+        send "&l&*l - Gras" to player
+        send "&m&*m - Barré" to player
+        send "&n&*n - Souligné" to player
+        send "&o&*o - Italique" to player
+        send "&r&*r - Réinitialiser" to player
+        send "&k!!!&r&*k - Obscur" to player

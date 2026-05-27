@@ -1,0 +1,11 @@
+on join:
+    if player has permission "admin":
+        set join message to ""
+        stop
+    set join message to "&7[&a+&7] &7%player%"
+
+on quit:
+    if player has permission "admin":
+        set quit message to ""
+        stop
+    set quit message to "&7[&c-&7] &7%player%"
