@@ -1,2 +1,6 @@
 *.bak
 *.swp
+
+# Dossier de scripts privés — jamais versionné dans ce repo public
+private/
+global-private/
