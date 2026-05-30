@@ -1,5 +1,5 @@
 #script fait par CobaltWars (vpcw-dev) n'hésitez pas à corriger si besoin
-
+#commentaire en français pour le Norath ^^
 on right click using stick:
     if name of player's tool is "Zombie Stick": #on utilise un bâton nommé a l'enclume "Zombie Stick", ou /give @p stick[minecraft:custom_name='{"text":"Zombie Stick"}']
         if {cooldown::%player's uuid%} is not set: #si pas de cooldown
