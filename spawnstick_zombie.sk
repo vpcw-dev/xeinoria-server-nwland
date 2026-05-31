@@ -1,0 +1,17 @@
+#script fait par CobaltWars (vpcw-dev) -> permet de faire spawn un zombie à intervale de 1min avec un baton obtenable en faisant la commande /zombie_stick
+
+command /zombie_stick:
+    trigger:
+        give player a stick named "&aZombie Stick"
+
+on right click using stick:
+    if name of player's tool is "Zombie Stick": #on utilise un bâton nommé a l'enclume "Zombie Stick", ou /give @p stick[minecraft:custom_name='{"text":"Zombie Stick"}']
+        if {cooldown::%player's uuid%} is not set: #si pas de cooldown
+            spawn zombie
+            set {cooldown::%player's uuid%} to now #on prend l'uuid du joueur pour éviter les conflits entre pseudo et on active le cooldown
+            wait 60 seconds
+            delete {cooldown::%player's uuid%} #on supprime de cooldown à la fin des 60s
+        else: #si cooldown
+            set {_remaining} to difference between {cooldown::%player's uuid%} and now #calcul du temps écoulé
+            set {_left} to (60 - floor({_remaining} / 1 second)) #calcul du temps restant
+            send action bar "&aLe bâton se recharge... %{_left}%s restantes" to player
