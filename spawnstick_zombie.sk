@@ -1,17 +1,33 @@
 #script fait par CobaltWars (vpcw-dev) -> permet de faire spawn un zombie à intervale de 1min avec un baton obtenable en faisant la commande /zombie_stick
 
+# --- Commande pour obtenir le bâton ---
 command /zombie_stick:
     trigger:
         give player a stick named "&aZombie Stick"
 
+# --- Clic droit avec le bâton ---
 on right click using stick:
-    if name of player's tool is "Zombie Stick": #on utilise un bâton nommé a l'enclume "Zombie Stick", ou /give @p stick[minecraft:custom_name='{"text":"Zombie Stick"}']
+    if name of player's tool is "&aZombie Stick": #on utilise un bâton "Zombie Stick" obtenable uniquement via commande
         if {cooldown::%player's uuid%} is not set: #si pas de cooldown
             spawn zombie
+            set {_zombie} to last spawned zombie #on enregistre le zombie
+            set {zombie.owner::%uuid of last spawned entity%} to uuid of player #on marque le zombie avec l'invocateur pour qu'il ne l'attaque pas (on utilise l'uuid)
+
+            # --- Timer ---
             set {cooldown::%player's uuid%} to now #on prend l'uuid du joueur pour éviter les conflits entre pseudo et on active le cooldown
             wait 60 seconds
-            delete {cooldown::%player's uuid%} #on supprime de cooldown à la fin des 60s
-        else: #si cooldown
+            delete {cooldown::%player's uuid%} #on supprime le cooldown à la fin des 60s
+        else:
             set {_remaining} to difference between {cooldown::%player's uuid%} and now #calcul du temps écoulé
             set {_left} to (60 - floor({_remaining} / 1 second)) #calcul du temps restant
             send action bar "&aLe bâton se recharge... %{_left}%s restantes" to player
+
+on target:
+    if event-entity is a zombie:
+        set {_owner_uuid} to {zombie.owner::%uuid of event-entity%}
+        if {_owner_uuid} is set: #on vérifie si le zombie a été invoqué par un bâton
+            if target is a villager: #si la cible est un villageois
+                cancel event
+            if "%uuid of target%" is "% {_owner_uuid}%": #si la cible est l'invocateur du zombie
+                cancel event
+                delete target of entity
