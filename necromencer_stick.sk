@@ -1,0 +1,191 @@
+# Script fait par CobaltWars (vpcw-dev) -> permet de faire spawn un zombie à intervale de 1min avec un baton obtenable en faisant la commande /necro_stick
+
+# --- Variables ---
+options:
+    stickName: &aBâton du nécromencien # Nom du bâton
+    maxMana: 100 # Mana max disponible
+
+# --- Commande pour obtenir le bâton ---
+command /necro_stick:
+    trigger:
+        give player a stick named "{@stickName}"
+
+# --- Système de mana ---
+
+# On empèche le drop de l'xp
+on experience spawn:
+    cancel event
+
+# Regen de 1 de mana toute les 1 secondes si mana en dessous de mana max
+every 1 second:
+    loop all players:
+        set {_id} to uuid of loop-player
+
+        if {mana::%{_id}%} is not set:
+            set {mana::%{_id}%} to {@maxMana}
+
+        if {mana::%{_id}%} < {@maxMana}:
+            add 1 to {mana::%{_id}%}
+
+            if {mana::%{_id}%} > {@maxMana}:
+                set {mana::%{_id}%} to {@maxMana}
+        
+        # Mise à jour de la barre de mana (seulement si le joueur tient le bâton)
+        if name of tool of loop-player is "{@stickName}":
+            set level of loop-player to {mana::%{_id}%}
+        else:
+            set level of loop-player to 0
+
+# Fonction qui vérifie si la dépense de mana est possible
+function has_mana(player: player, amount: number) :: boolean:
+    set {_id} to uuid of {_player}
+
+    if {mana::%{_id}%} is not set:
+        set {mana::%{_id}%} to {@maxMana}
+
+    if {mana::%{_id}%} >= {_amount}:
+        remove {_amount} from {mana::%{_id}%}
+        return true
+
+    return false
+
+# --- Clic droit avec le bâton ---
+on right click with stick:
+    if name of player's tool is "{@stickName}":
+
+        # Sneak = changement du mod de spawn
+        if player is sneaking:
+            change_mod(player)
+
+        # Action normale
+        else:
+            set {_id} to uuid of player
+            set {_mode} to {stick.mode::%{_id}%}
+
+            # Mod de spawn par défaut
+            if {_mode} is not set:
+                set {_mode} to "zombie"
+
+            # Conditions qui permettent le spawn des mobs : si dépense de mana possible, on appelle les fonctions de spawn
+            if {_mode} is "zombie":
+                if has_mana(player, 20) is true:
+                    spawn_zombie(player)
+                else:
+                    send action bar "&cPas assez de mana ! &7(20 requis)" to player
+
+            else if {_mode} is "squelette":
+                if has_mana(player, 40) is true:
+                    spawn_skeleton(player)
+                else:
+                    send action bar "&cPas assez de mana ! &7(40 requis)" to player
+
+            else if {_mode} is "stray":
+                if has_mana(player, 60) is true:
+                    spawn_stray(player)
+                else:
+                    send action bar "&cPas assez de mana ! &7(60 requis)" to player
+            
+            else if {_mode} is "zombie en netherite":
+                if has_mana(player, 100) is true:
+                    spawn_zombie_netherite(player)
+                else:
+                    send action bar "&cPas assez de mana ! &7(100 requis)" to player
+
+# --- Changement du mod de spawn ---
+function change_mod(player: player):
+    set {_id} to uuid of {_player}
+
+    if {stick.mode::%{_id}%} is not set:
+        set {stick.mode::%{_id}%} to "zombie"
+    else if {stick.mode::%{_id}%} is "zombie":
+        set {stick.mode::%{_id}%} to "squelette"
+    else if {stick.mode::%{_id}%} is "squelette":
+        set {stick.mode::%{_id}%} to "stray"
+    else if {stick.mode::%{_id}%} is "stray":
+        set {stick.mode::%{_id}%} to "zombie en netherite"
+    else:
+        set {stick.mode::%{_id}%} to "zombie"
+
+    send action bar "&7Mode: %{stick.mode::%{_id}%}%" to {_player}
+
+# --- Tout les fonctions de spawn des mobs et leurs attributs ---
+function spawn_zombie(player: player):
+    spawn zombie at location 1.5 blocks horizontally in front of {_player} # On fait spawn le mob en question juste devant le joueur, et on évite qu'il spawn dans le mur ou le sol
+    set {_zombie} to last spawned entity # On enregistre le mob fraichement spawné
+    set {zombie.owner::%uuid of {_zombie}%} to uuid of {_player} # On lie le mob spawné à son invocateur
+    send action bar "&aZombie invoqué !" to {_player}
+
+    set helmet of {_zombie} to leather helmet # On l'équipe d'un casque en cuir, et pour le reste des fonctions qui suivent c'est la même chose !
+
+function spawn_zombie_netherite(player: player):
+    spawn zombie at location 1.5 blocks horizontally in front of {_player}
+    set {_zombie_netherite} to last spawned entity
+    set {zombie.owner::%uuid of {_zombie_netherite}%} to uuid of {_player}
+    send action bar "&aZombie en netherite invoqué !" to {_player}
+
+    set helmet of {_zombie_netherite} to netherite helmet
+    set chestplate of {_zombie_netherite} to netherite chestplate
+    set leggings of {_zombie_netherite} to netherite leggings
+    set boots of {_zombie_netherite} to netherite boots
+    set tool of {_zombie_netherite} to netherite sword
+
+function spawn_skeleton(player: player):
+    spawn skeleton at location 1.5 blocks horizontally in front of {_player}
+    set {_squelette} to last spawned entity
+    set {squelette.owner::%uuid of {_squelette}%} to uuid of {_player}
+    send action bar "&eSquelette invoqué !" to {_player}
+
+    set helmet of {_squelette} to leather helmet
+
+function spawn_stray(player: player):
+    spawn stray at location 1.5 blocks horizontally in front of {_player}
+    set {_stray} to last spawned entity
+    set {stray.owner::%uuid of {_stray}%} to uuid of {_player}
+    send action bar "&cStray invoqué !" to {_player}
+
+    set {_helmet} to leather helmet
+    dye {_helmet} (60, 68, 170)
+    set helmet of {_stray} to {_helmet}
+
+# --- Règles de l'agro ---
+
+# On empèche que le mob spawné attaque son invocateur, et que les mobs s'entre-attaquent (dans le cas ou on fait spawn par exemple plusieurs squelette, on est pas a l'abris d'une flèche mal placé sur un autre squelette)
+on target:
+    if event-entity is a zombie:
+        set {_owner_uuid} to {zombie.owner::%uuid of event-entity%}
+        if {_owner_uuid} is set:
+            if "%uuid of target%" is "%{_owner_uuid}%":
+                cancel event
+                delete target of entity
+            if target is a villager:
+                cancel event
+            if target is a skeleton:
+                cancel event
+            if target is a stray:
+                cancel event
+            
+    if event-entity is a skeleton:
+        set {_owner_uuid} to {squelette.owner::%uuid of event-entity%}
+        if {_owner_uuid} is set:
+            if "%uuid of target%" is "%{_owner_uuid}%":
+                cancel event
+                delete target of entity
+            if target is a zombie:
+                cancel event
+            if target is a skeleton:
+                cancel event
+            if target is a stray:
+                cancel event
+    
+    if event-entity is a stray:
+        set {_owner_uuid} to {stray.owner::%uuid of event-entity%}
+        if {_owner_uuid} is set:
+            if "%uuid of target%" is "%{_owner_uuid}%":
+                cancel event
+                delete target of entity
+            if target is a zombie:
+                cancel event
+            if target is a skeleton:
+                cancel event
+            if target is a stray:
+                cancel event
