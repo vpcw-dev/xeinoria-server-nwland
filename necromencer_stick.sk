@@ -7,41 +7,59 @@ options:
 
 # --- Commande pour obtenir le bâton ---
 command /necro_stick:
+    permission: necromencerstick.give
     trigger:
         give player a stick named "{@stickName}"
 
 # --- Système de mana ---
 
-# On empèche le drop de l'xp
-on experience spawn:
-    cancel event
-
 # Regen de 1 de mana toute les 1 secondes si mana en dessous de mana max
 every 1 second:
-    loop all players:
-        set {_id} to uuid of loop-player
+    loop {mana_regen::*}:
+        set {_player} to loop-value parsed as player
+
+        if {_player} is not online:
+            remove loop-value from {mana_regen::*}
+            exit loop
+
+        set {_id} to uuid of {_player}
+        set {_max} to {@maxMana}
+
+        # Vérifie si le joueur a encore le bâton dans son inventaire
+        set {_has_stick} to false
+        loop items of {_player}:
+            if name of loop-item is "{@stickName}":
+                set {_has_stick} to true
+                exit loop
+
+        # Plus de bâton -> on stoppe tout pour ce joueur
+        if {_has_stick} is false:
+            remove loop-value from {mana_regen::*}
+            if {mana_bar::%{_id}%} is set:
+                remove {_player} from bar players of {mana_bar::%{_id}%}
+            exit loop
 
         if {mana::%{_id}%} is not set:
-            set {mana::%{_id}%} to {@maxMana}
+            set {mana::%{_id}%} to {_max}
 
-        if {mana::%{_id}%} < {@maxMana}:
+        if {mana::%{_id}%} < {_max}:
             add 1 to {mana::%{_id}%}
 
-            if {mana::%{_id}%} > {@maxMana}:
-                set {mana::%{_id}%} to {@maxMana}
-        
-        # Mise à jour de la barre de mana (seulement si le joueur tient le bâton)
-        if name of tool of loop-player is "{@stickName}":
-            set level of loop-player to {mana::%{_id}%}
-        else:
-            set level of loop-player to 0
+            if {mana::%{_id}%} >= {_max}:
+                set {mana::%{_id}%} to {_max}
+
+        # Mise à jour de la barre de mana
+        if {mana_bar::%{_id}%} is set:
+            set bossbar title of {mana_bar::%{_id}%} to "✦ Mana : %{mana::%{_id}%}%/%{_max}%"
+            set {_progress} to ({mana::%{_id}%} * 100 / {_max})
+            set bossbar progress of {mana_bar::%{_id}%} to {_progress}
 
 # Fonction qui vérifie si la dépense de mana est possible
 function has_mana(player: player, amount: number) :: boolean:
     set {_id} to uuid of {_player}
 
     if {mana::%{_id}%} is not set:
-        set {mana::%{_id}%} to {@maxMana}
+        return false
 
     if {mana::%{_id}%} >= {_amount}:
         remove {_amount} from {mana::%{_id}%}
@@ -49,17 +67,50 @@ function has_mana(player: player, amount: number) :: boolean:
 
     return false
 
-# --- Clic droit avec le bâton ---
+# --- Clic gauche avec le bâton - initialisation ---
+on left click with stick:
+    if name of player's tool is "{@stickName}":
+        set {_id} to uuid of player
+        set {_max} to {@maxMana}
+
+        # Déjà activé
+        if {mana_regen::*} contains uuid of player:
+            stop
+
+        # Initialisation du mana
+        if {mana::%{_id}%} is not set:
+            set {mana::%{_id}%} to {_max}
+
+        # Création de la bossbar si elle n'existe pas encore
+        if {mana_bar::%{_id}%} is not set:
+            set {mana_bar::%{_id}%} to boss bar with id "mana-bar-%{_id}%" with title "✦ Mana : %{mana::%{_id}%}%/%{_max}%"
+            set {_progress} to ({mana::%{_id}%} * 100 / {_max})
+            set bossbar progress of {mana_bar::%{_id}%} to {_progress}
+
+        # Affiche la bossbar
+        add player to bar players of {mana_bar::%{_id}%}
+
+        # Démarre la regen si pas déjà actif
+        if {mana_regen::*} does not contain uuid of player:
+            add uuid of player to {mana_regen::*}
+
+        send action bar "&aBâton du nécromencien activé !" to player
+
+# --- Clic droit avec le bâton - spawn / changement de mode ---
 on right click with stick:
     if name of player's tool is "{@stickName}":
+        set {_id} to uuid of player
 
-        # Sneak = changement du mod de spawn
+        # Vérifie que le joueur a bien fait le clic d'initialisation
+        if {mana_regen::*} does not contain uuid of player:
+            send action bar "&cFais un clic gauche pour activer le bâton !" to player
+            stop
+
         if player is sneaking:
             change_mod(player)
 
         # Action normale
         else:
-            set {_id} to uuid of player
             set {_mode} to {stick.mode::%{_id}%}
 
             # Mod de spawn par défaut
@@ -112,7 +163,7 @@ function change_mod(player: player):
 function spawn_zombie(player: player):
     spawn zombie at location 1.5 blocks horizontally in front of {_player} # On fait spawn le mob en question juste devant le joueur, et on évite qu'il spawn dans le mur ou le sol
     set {_zombie} to last spawned entity # On enregistre le mob fraichement spawné
-    set {zombie.owner::%uuid of {_zombie}%} to uuid of {_player} # On lie le mob spawné à son invocateur
+    set {summoned.mobs::%uuid of {_zombie}%} to uuid of {_player} # On lie le mob spawné à son invocateur
     send action bar "&aZombie invoqué !" to {_player}
 
     set helmet of {_zombie} to leather helmet # On l'équipe d'un casque en cuir, et pour le reste des fonctions qui suivent c'est la même chose !
@@ -120,7 +171,7 @@ function spawn_zombie(player: player):
 function spawn_zombie_netherite(player: player):
     spawn zombie at location 1.5 blocks horizontally in front of {_player}
     set {_zombie_netherite} to last spawned entity
-    set {zombie.owner::%uuid of {_zombie_netherite}%} to uuid of {_player}
+    set {summoned.mobs::%uuid of {_zombie_netherite}%} to uuid of {_player}
     send action bar "&aZombie en netherite invoqué !" to {_player}
 
     set helmet of {_zombie_netherite} to netherite helmet
@@ -132,7 +183,7 @@ function spawn_zombie_netherite(player: player):
 function spawn_skeleton(player: player):
     spawn skeleton at location 1.5 blocks horizontally in front of {_player}
     set {_squelette} to last spawned entity
-    set {squelette.owner::%uuid of {_squelette}%} to uuid of {_player}
+    set {summoned.mobs::%uuid of {_squelette}%} to uuid of {_player}
     send action bar "&eSquelette invoqué !" to {_player}
 
     set helmet of {_squelette} to leather helmet
@@ -140,7 +191,7 @@ function spawn_skeleton(player: player):
 function spawn_stray(player: player):
     spawn stray at location 1.5 blocks horizontally in front of {_player}
     set {_stray} to last spawned entity
-    set {stray.owner::%uuid of {_stray}%} to uuid of {_player}
+    set {summoned.mobs::%uuid of {_stray}%} to uuid of {_player}
     send action bar "&cStray invoqué !" to {_player}
 
     set {_helmet} to leather helmet
@@ -151,41 +202,21 @@ function spawn_stray(player: player):
 
 # On empèche que le mob spawné attaque son invocateur, et que les mobs s'entre-attaquent (dans le cas ou on fait spawn par exemple plusieurs squelette, on est pas a l'abris d'une flèche mal placé sur un autre squelette)
 on target:
-    if event-entity is a zombie:
-        set {_owner_uuid} to {zombie.owner::%uuid of event-entity%}
-        if {_owner_uuid} is set:
-            if "%uuid of target%" is "%{_owner_uuid}%":
-                cancel event
-                delete target of entity
-            if target is a villager:
-                cancel event
-            if target is a skeleton:
-                cancel event
-            if target is a stray:
-                cancel event
-            
-    if event-entity is a skeleton:
-        set {_owner_uuid} to {squelette.owner::%uuid of event-entity%}
-        if {_owner_uuid} is set:
-            if "%uuid of target%" is "%{_owner_uuid}%":
-                cancel event
-                delete target of entity
-            if target is a zombie:
-                cancel event
-            if target is a skeleton:
-                cancel event
-            if target is a stray:
-                cancel event
-    
-    if event-entity is a stray:
-        set {_owner_uuid} to {stray.owner::%uuid of event-entity%}
-        if {_owner_uuid} is set:
-            if "%uuid of target%" is "%{_owner_uuid}%":
-                cancel event
-                delete target of entity
-            if target is a zombie:
-                cancel event
-            if target is a skeleton:
-                cancel event
-            if target is a stray:
-                cancel event
+    # Sortie immédiate si le mob n'appartient pas au script
+    if {summoned.mobs::%uuid of event-entity%} is not set:
+        stop
+
+    set {_owner_uuid} to {summoned.mobs::%uuid of event-entity%}
+
+    if uuid of target is {_owner_uuid}:
+        cancel event
+        stop
+    if {summoned.mobs::%uuid of target%} is set:
+        cancel event
+        stop
+
+# --- Nettoyage des mobs morts ---
+on death of living entity:
+    if {summoned.mobs::%uuid of victim%} is set:
+        delete {summoned.mobs::%uuid of victim%}
+        cancel drops
